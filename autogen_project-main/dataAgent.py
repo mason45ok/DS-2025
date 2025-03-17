@@ -3,6 +3,7 @@ import asyncio
 import pandas as pd
 from dotenv import load_dotenv
 import io
+import chardet
 
 # 根據你的專案結構調整下列 import
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
@@ -13,16 +14,16 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.agents.web_surfer import MultimodalWebSurfer
 
 load_dotenv()
-
+# HW1 Prompt change info
 async def process_chunk(chunk, start_idx, total_records, model_client, termination_condition):
     """
     處理單一批次資料：
       - 將該批次資料轉成 dict 格式
       - 組出提示，要求各代理人根據該批次資料進行分析，
-        並提供寶寶照護建議。
+        並提供資料中，最多A1事故的車種(會在「當事者區分-類別-大類別名稱-車種」中)。
       - 請 MultimodalWebSurfer 代理人利用外部網站搜尋功能，
-        搜尋最新寶寶照護建議資訊（例如餵食、睡眠、尿布更換等），
-        並將搜尋結果納入建議中。
+        搜尋最新車禍事故率，
+        並將搜尋結果納入資料中。
       - 收集所有回覆訊息並返回。
     """
     # 將資料轉成 dict 格式
@@ -30,10 +31,10 @@ async def process_chunk(chunk, start_idx, total_records, model_client, terminati
     prompt = (
         f"目前正在處理第 {start_idx} 至 {start_idx + len(chunk) - 1} 筆資料（共 {total_records} 筆）。\n"
         f"以下為該批次資料:\n{chunk_data}\n\n"
-        "請根據以上資料進行分析，並提供完整的寶寶照護建議。"
+        "請根據以上資料進行分析，並提供最多A1事故的車種(會在「當事者區分-類別-大類別名稱-車種」中)"
         "其中請特別注意：\n"
-        "  1. 分析寶寶的日常行為與照護需求；\n"
-        "  2. 請 MultimodalWebSurfer 搜尋外部網站，找出最新的寶寶照護建議資訊（例如餵食、睡眠、尿布更換等），\n"
+        "  1. 分析車禍事故率及其占比；\n"
+        "  2. 請 MultimodalWebSurfer 搜尋外部網站，找出最新的最新車禍事故率，\n"
         "     並將搜尋結果整合進回覆中；\n"
         "  3. 最後請提供具體的建議和相關參考資訊。\n"
         "請各代理人協同合作，提供一份完整且具參考價值的建議。"
@@ -80,9 +81,12 @@ async def main():
     termination_condition = TextMentionTermination("exit")
     
     # 使用 pandas 以 chunksize 方式讀取 CSV 檔案
-    csv_file_path = "cuboai_baby_diary.csv"
+    
+    # HW1 Data set info
+    csv_file_path = "autogen_project-main/NPA_TMA1.csv"
     chunk_size = 1000
-    chunks = list(pd.read_csv(csv_file_path, chunksize=chunk_size))
+    with open(csv_file_path, "r", encoding="utf-8", errors="replace") as f:
+        chunks = list(pd.read_csv(f, chunksize=chunk_size))
     total_records = sum(chunk.shape[0] for chunk in chunks)
     
     # 利用 map 與 asyncio.gather 同時處理所有批次（避免使用傳統 for 迴圈）
