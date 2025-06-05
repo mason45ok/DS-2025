@@ -83,7 +83,7 @@ async def main():
     # 使用 pandas 以 chunksize 方式讀取 CSV 檔案
     
     # HW1 Data set info
-    csv_file_path = "autogen_project-main/NPA_TMA1.csv"
+    csv_file_path = r"C:\Users\mason\Desktop\作業\科技系\資料結構\DS-2025\DS-2025\autogen_project-main\NPA_TMA1.csv"
     chunk_size = 1000
     with open(csv_file_path, "r", encoding="utf-8", errors="replace") as f:
         chunks = list(pd.read_csv(f, chunksize=chunk_size))
